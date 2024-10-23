@@ -159,8 +159,13 @@ Loop:
 		// exec loop variables
 		header := block.HeaderNoCopy()
 		header.GasUsed = uint64(execRs.GasUsed)
-		header.ReceiptHash = types.DeriveSha(execRs.Receipts)
-		header.Bloom = execRs.Bloom
+		if h := cfg.zk.Merlin.FindMerlinHeaderConfig(header.Number); h != nil {
+			header.ReceiptHash = h.ReceiptHash
+			header.Bloom = h.Bloom
+		} else {
+			header.ReceiptHash = types.DeriveSha(execRs.Receipts)
+			header.Bloom = execRs.Bloom
+		}
 		// don't move above header values setting - wrong hash will be calculated
 		prevBlockHash = header.Hash()
 		prevBlockRoot = header.Root
