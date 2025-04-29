@@ -147,6 +147,29 @@ func ApplyFlagsForZkConfig(ctx *cli.Context, cfg *ethconfig.Config) {
 		witnessInclusion = append(witnessInclusion, libcommon.HexToAddress(s))
 	}
 
+	gasPriceDynamicDecayFactor := ctx.Float64(utils.GasPriceDynamicDecayFactor.Name)
+	if gasPriceDynamicDecayFactor <= 0 || gasPriceDynamicDecayFactor >= 1 {
+		panic("Effective gas price dynamic decay factor must be in interval (0; 1)")
+	}
+	globalPendingDynamicFactor := ctx.Float64(utils.GlobalPendingDynamicFactor.Name)
+	if globalPendingDynamicFactor < 0 || globalPendingDynamicFactor > 1 {
+		panic("Effective global pending dynamic factor must be in interval [0; 1]")
+	}
+	gpConf := &ethconfig.GasPriceConf{
+		Enable:                     ctx.Bool(utils.EnableGasPricer.Name),
+		DefaultGasPrice:            ctx.Uint64(utils.DefaultGasPrice.Name),
+		MaxGasPrice:                ctx.Uint64(utils.MaxGasPrice.Name),
+		IgnorePrice:                ctx.Uint64(utils.IgnorePrice.Name),
+		CheckBlocks:                ctx.Int(utils.CheckBlocks.Name),
+		Percentile:                 ctx.Int(utils.Percentile.Name),
+		EnableGasPriceDynamicDecay: ctx.Bool(utils.EnableGasPriceDynamicDecay.Name),
+		GasPriceDynamicDecayFactor: gasPriceDynamicDecayFactor,
+		GlobalPending:              cfg.TxPool.PendingSubPoolLimit,
+		GlobalPendingDynamicFactor: globalPendingDynamicFactor,
+		PendingGasLimit:            ctx.Uint64(utils.PendingGasLimit.Name),
+		UpdatePeriod:               ctx.Duration(utils.UpdatePeriod.Name),
+	}
+
 	cfg.Zk = &ethconfig.Zk{
 		L2ChainId:                              ctx.Uint64(utils.L2ChainIdFlag.Name),
 		L2RpcUrl:                               ctx.String(utils.L2RpcUrlFlag.Name),
@@ -206,6 +229,7 @@ func ApplyFlagsForZkConfig(ctx *cli.Context, cfg *ethconfig.Config) {
 		DefaultGasPrice:                        ctx.Uint64(utils.DefaultGasPrice.Name),
 		MaxGasPrice:                            ctx.Uint64(utils.MaxGasPrice.Name),
 		GasPriceFactor:                         ctx.Float64(utils.GasPriceFactor.Name),
+		GasPriceCfg:                            gpConf,
 		WitnessFull:                            ctx.Bool(utils.WitnessFullFlag.Name),
 		SyncLimit:                              ctx.Uint64(utils.SyncLimit.Name),
 		DebugTimers:                            ctx.Bool(utils.DebugTimers.Name),

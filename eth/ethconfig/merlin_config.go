@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/ledgerwatch/erigon-lib/common"
-
 	"github.com/ledgerwatch/erigon/core/types"
 )
 
@@ -50,4 +50,31 @@ func ReadReplaceBlock(path string) (*ReplaceBlocks, error) {
 		return nil, err
 	}
 	return &m, nil
+}
+
+type GasPriceConf struct {
+	Enable                     bool
+	DefaultGasPrice            uint64
+	MaxGasPrice                uint64
+	IgnorePrice                uint64
+	CheckBlocks                int
+	Percentile                 int
+	EnableGasPriceDynamicDecay bool
+	GasPriceDynamicDecayFactor float64
+	GlobalPending              int
+	GlobalPendingDynamicFactor float64
+	PendingGasLimit            uint64
+	UpdatePeriod               time.Duration
+}
+
+var DefaultGPC = GasPriceConf{
+	Enable:                     false,
+	CheckBlocks:                5,
+	Percentile:                 70,
+	EnableGasPriceDynamicDecay: false,
+	GasPriceDynamicDecayFactor: 0.05,
+	GlobalPending:              10_000,
+	GlobalPendingDynamicFactor: 1,
+	PendingGasLimit:            22_000_000,
+	UpdatePeriod:               10 * time.Second,
 }

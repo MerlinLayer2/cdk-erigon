@@ -62,6 +62,11 @@ func (api *APIImpl) GasPrice_nonRedirected(ctx context.Context) (*hexutil.Big, e
 		return &price, nil
 	}
 
+	if api.L2GasPricer != nil {
+		price := api.L2GasPricer.GetGasPrice()
+		return (*hexutil.Big)(price), nil
+	}
+
 	// if gas price timestamp is older than 3 seconds, update it
 	if time.Since(api.L1GasPrice.timestamp) > 3*time.Second || api.L1GasPrice.gasPrice == nil {
 		l1GasPrice, err := api.l1GasPrice()

@@ -64,6 +64,7 @@ type Zk struct {
 	DefaultGasPrice                        uint64
 	MaxGasPrice                            uint64
 	GasPriceFactor                         float64
+	GasPriceCfg                            *GasPriceConf
 	DAUrl                                  string
 	DataStreamHost                         string
 	DataStreamPort                         uint

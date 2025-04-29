@@ -372,6 +372,7 @@ type APIImpl struct {
 	MaxGasPrice                   uint64
 	GasPriceFactor                float64
 	L1GasPrice                    L1GasPrice
+	L2GasPricer                   L2GasPricer
 	SubscribeLogsChannelSize      int
 	logger                        log.Logger
 	VirtualCountersSmtReduction   float64
@@ -414,6 +415,10 @@ func NewEthAPI(base *BaseAPI, db kv.RoDB, eth rpchelper.ApiBackend, txPool txpoo
 		BadTxAllowance:                ethCfg.BadTxAllowance,
 		LogsMaxRange:                  LogsMaxRange,
 	}
+}
+
+func (api *APIImpl) SetL2GasPricer(l2GasPricer L2GasPricer) {
+	api.L2GasPricer = l2GasPricer
 }
 
 // // RPCTransaction represents a transaction that will serialize to the RPC representation of a transaction

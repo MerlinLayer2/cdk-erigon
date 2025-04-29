@@ -714,6 +714,51 @@ var (
 		Usage: "Apply factor to L1 gas price to calculate l2 gasPrice",
 		Value: 1,
 	}
+	EnableGasPricer = cli.BoolFlag{
+		Name:  "zkevm.enable-gas-pricer",
+		Usage: "Set enable gas pricer",
+		Value: ethconfig.DefaultGPC.Enable,
+	}
+	IgnorePrice = cli.Uint64Flag{
+		Name:  "zkevm.ignore-gas-price",
+		Usage: "Set the ignore gas price",
+		Value: ethconfig.DefaultGPC.IgnorePrice,
+	}
+	CheckBlocks = cli.IntFlag{
+		Name:  "zkevm.check-blocks",
+		Usage: "Number of recent blocks to check for gas prices",
+		Value: ethconfig.DefaultGPC.CheckBlocks,
+	}
+	Percentile = cli.IntFlag{
+		Name:  "zkevm.percentile",
+		Usage: "Suggested gas price is the given percentile of a set of recent transaction gas prices",
+		Value: ethconfig.DefaultGPC.Percentile,
+	}
+	EnableGasPriceDynamicDecay = cli.BoolFlag{
+		Name:  "zkevm.enable-gas-price-dynamic-decay",
+		Usage: "Set enable gas price dynamic decay",
+		Value: ethconfig.DefaultGPC.EnableGasPriceDynamicDecay,
+	}
+	GasPriceDynamicDecayFactor = cli.Float64Flag{
+		Name:  "zkevm.gas-price-dynamic-decay-factor",
+		Usage: "Set gas price dynamic decay factor",
+		Value: ethconfig.DefaultGPC.GasPriceDynamicDecayFactor,
+	}
+	GlobalPendingDynamicFactor = cli.Float64Flag{
+		Name:  "zkevm.global-pending-dynamic-factor",
+		Usage: "Set global pending pool threshold of dynamic decay for gas price",
+		Value: ethconfig.DefaultGPC.GlobalPendingDynamicFactor,
+	}
+	PendingGasLimit = cli.Uint64Flag{
+		Name:  "zkevm.pending-gas-limit",
+		Usage: "Set the max of pending tx sum gas limit for gas price",
+		Value: ethconfig.DefaultGPC.PendingGasLimit,
+	}
+	UpdatePeriod = cli.DurationFlag{
+		Name:  "zkevm.update-period",
+		Usage: "Set update period of gas price",
+		Value: ethconfig.DefaultGPC.UpdatePeriod,
+	}
 	WitnessFullFlag = cli.BoolFlag{
 		Name:  "zkevm.witness-full",
 		Usage: "Enable/Diable witness full",
