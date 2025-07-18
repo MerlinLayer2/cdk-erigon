@@ -910,6 +910,11 @@ var (
 		Usage: "The maximum number of times a transaction that consumes too many counters to fit into a batch will be attempted before it is rejected outright by eth_sendRawTransaction",
 		Value: 2,
 	}
+	PessimisticForkNumber = cli.Uint64Flag{
+		Name:  "zkevm.pessimistic-fork-number",
+		Usage: "The fork number to use for networks launched as PP networks with no FEP history. Default 12.",
+		Value: 12,
+	}
 	ACLPrintHistory = cli.IntFlag{
 		Name:  "acl.print-history",
 		Usage: "Number of entries to print from the ACL history on node start up",
@@ -984,6 +989,11 @@ var (
 		Name:  "rpc.gascap",
 		Usage: "Sets a cap on gas that can be used in eth_call/estimateGas",
 		Value: 50000000,
+	}
+	BatchMethodForbiddenList = cli.StringFlag{
+		Name:  "rpc.batch-method-forbidden",
+		Usage: "Specify granular (method-by-method) API forbidden list for batch requests as CSV, these requests won't be allowed in a batch request as they can lead to OOM",
+		Value: "eth_getLogs,debug_traceTransaction,trace_transaction",
 	}
 	RpcTraceCompatFlag = cli.BoolFlag{
 		Name:  "trace.compat",

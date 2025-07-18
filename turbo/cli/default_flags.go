@@ -71,6 +71,7 @@ var DefaultFlags = []cli.Flag{
 	&utils.WSEnabledFlag,
 	&utils.WSListenAddrFlag,
 	&utils.WSApiFlag,
+	&utils.WSSubscribeLogsChannelSize,
 	&utils.WsCompressionFlag,
 	&utils.HTTPTraceFlag,
 	&utils.HTTPDebugSingleFlag,
@@ -81,6 +82,7 @@ var DefaultFlags = []cli.Flag{
 	&utils.RpcAccessListFlag,
 	&utils.RpcTraceCompatFlag,
 	&utils.RpcGasCapFlag,
+	&utils.BatchMethodForbiddenList,
 	&utils.RpcBatchLimit,
 	&utils.RpcReturnDataLimit,
 	&utils.RpcLogsMaxRange,
@@ -319,4 +321,5 @@ var DefaultFlags = []cli.Flag{
 	&utils.GasPriceHistoryCount,
 	&utils.RejectLowGasPriceTransactions,
 	&utils.RejectLowGasPriceTolerance,
+	&utils.PessimisticForkNumber,
 }
