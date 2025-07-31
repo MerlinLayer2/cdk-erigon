@@ -2,12 +2,14 @@ name: RPC endpoint doc
 on:
   push:
     branches:
+      - main
       - zkevm
-      - stable*
+      - stable/**
   pull_request:
     branches:
+      - main
       - zkevm
-      - stable*
+      - stable/**
     types:
       - opened
       - reopened
