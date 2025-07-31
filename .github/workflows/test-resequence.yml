@@ -2,10 +2,12 @@ name: Resequence test
 on:
   push:
     branches:
+      - main
       - zkevm
       - stable*
   pull_request:
     branches:
+      - main
       - zkevm
       - stable*
     types:
@@ -69,7 +71,7 @@ jobs:
       - name: Test resequence
         working-directory: ./cdk-erigon
         run: .github/scripts/test_resequence.sh
-          
+
       - name: Upload logs
         uses: actions/upload-artifact@v3
         with:
