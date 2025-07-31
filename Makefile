@@ -168,6 +168,7 @@ test-erigon-ext:
 	@cd tests/erigon-ext-test && ./test.sh $(GIT_COMMIT)
 
 ## test:                              run unit tests with a 100s timeout
+.PHONY: test
 test:
 	$(GOTEST) --timeout 10m
 
