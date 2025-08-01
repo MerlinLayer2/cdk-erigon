@@ -106,11 +106,11 @@ for file in $(ls ./datadir/phase2-dump1); do
     if cmp -s ./datadir/phase2-dump1/$filename ./datadir/phase2-dump2/$filename; then
         echo "Phase 2 No difference found in $filename"
     else
-        if [ "$filename" = "BadHeaderNumber.txt" ]; then
+        if [ "$filename" = "BadHeaderNumber.txt" ] || [ "$filename" = "HermezSmt.txt" ]; then
             echo "Phase 2 Expected differences in $filename"
         else
             echo "Phase 2 Unexpected differences in $filename"
-            #exit 2
+            exit 2
         fi
     fi
 done
