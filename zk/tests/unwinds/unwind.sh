@@ -1,113 +1,186 @@
 #!/bin/bash
 
-# steps:
-# 1. run to where we will unwind to
-# 2. dump the data
-# 3. run to the final stop block
-# 4. dump the data
-# 5. unwind
-# 6. dump the data
-# 7. sync again to the final block
-# 8. dump the data
-# 9. compare the dumps at the unwind level and tip level
+set -e  # Exit immediately if a command exits with a non-zero status
+set -o pipefail  # Capture errors in pipelines
 
+# Variables
 dataPath="./datadir"
-firstStop=11204
-stopBlock=11315
+datastreamPath="zk/tests/unwinds/datastream"
+datastreamZipFileName="./datastream-net8-upto-11318-101.zip"
+firstStop=11203
+secondStop=11315
 unwindBatch=70
-firstTimeout=300s
-secondTimeout=300s
+datastreamPort=6900
+logFile="script.log"
 
-rm -rf "$dataPath/rpc-datadir"
-rm -rf "$dataPath/phase1-dump1"
-rm -rf "$dataPath/phase1-dump2"
-rm -rf "$dataPath/phase2-dump1"
-rm -rf "$dataPath/phase2-dump2"
-rm -rf "$dataPath/phase1-diffs"
-rm -rf "$dataPath/phase2-diffs"  
+# Redirect stdout to log file and keep stderr to console
+exec > >(tee -i "$logFile")  # Redirect stdout to log file
+exec 2> >(tee -a "$logFile" >&2)  # Redirect stderr to log file and keep it on console
 
-# run datastream server
+# Cleanup function
+cleanup() {
+    echo "[$(date)] Cleaning up..."
+    if [[ -n "$dspid" ]]; then
+        echo "[$(date)] Killing process with PID $dspid on port $datastreamPort"
+        kill -9 "$dspid" || echo "[$(date)] No process to kill on port $datastreamPort"
+    fi
+
+    echo "[$(date)] Cleaning data directories"
+    #rm -rf "$dataPath"
+
+    echo "[$(date)] Total execution time: $SECONDS seconds"
+}
+trap cleanup EXIT
+
+# Kill existing datastream server if running
+echo "[$(date)] Checking for existing datastream server on port $datastreamPort..."
+set +e
+dspid=$(lsof -i :$datastreamPort | awk 'NR==2 {print $2}')
+set -e
+
+if [[ -n "$dspid" ]]; then
+    echo "[$(date)] Killing existing datastream server with PID $dspid on port $datastreamPort"
+    kill -9 "$dspid" || echo "[$(date)] Failed to kill process $dspid"
+fi
+
+# Extract datastream data
+echo "[$(date)] Extracting datastream data..."
+pushd "$datastreamPath" || { echo "Failed to navigate to $datastreamPath"; exit 1; }
+    tar -xzf "$datastreamZipFileName" || { echo "Failed to extract $datastreamZipFileName"; exit 1; }
+popd
+
+# Remove existing data directory
+echo "[$(date)] Removing existing data directory..."
+rm -rf "$dataPath"
+
+# Start datastream server
+echo "[$(date)] Starting datastream server..."
 go run ./zk/debug_tools/datastream-host --file="$(pwd)/zk/tests/unwinds/datastream/hermez-dynamic-integration8-datastream/data-stream.bin" &
+dspid=$!
+echo "[$(date)] Datastream server PID: $dspid"
 
-# in order to start the datastream server
-sleep 10
+# Wait for datastream server to be available
+echo "[$(date)] Waiting for datastream server to become available on port $datastreamPort..."
+while ! bash -c "</dev/tcp/localhost/$datastreamPort" 2>/dev/null; do
+    sleep 1
+done
+echo "[$(date)] Datastream server is now available."
 
-# run erigon for a while to sync to the unwind point to capture the dump
-timeout $firstTimeout ./build/bin/cdk-erigon \
+# Function to dump data
+dump_data() {
+    local stop=$1
+    local label=$2
+    echo "[$(date)] Dumping data - $label ($stop)"
+    go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/$stop" || { echo "Failed to dump data for $label"; exit 1; }
+}
+
+# Run Erigon to first stop
+echo "[$(date)] Running Erigon to BlockHeight: $firstStop"
+./build/bin/cdk-erigon \
     --datadir="$dataPath/rpc-datadir" \
-    --config=./dynamic-integration8.yaml \
-    --zkevm.sync-limit=${firstStop}
+    --config="zk/tests/unwinds/config/dynamic-integration8.yaml" \
+    --debug.limit="$firstStop"
 
-# now get a dump of the datadir at this point
-go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase1-dump1"
+dump_data "$firstStop" "sync to first stop"
 
-# now run to the final stop block
-timeout $secondTimeout ./build/bin/cdk-erigon \
+# Run Erigon to second stop
+echo "[$(date)] Running Erigon to BlockHeight: $secondStop"
+./build/bin/cdk-erigon \
     --datadir="$dataPath/rpc-datadir" \
-    --config=./dynamic-integration8.yaml \
-    --zkevm.sync-limit=${stopBlock}
+    --config="zk/tests/unwinds/config/dynamic-integration8.yaml" \
+    --debug.limit="$secondStop"
 
-# now get a dump of the datadir at this point
-go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase2-dump1"
+dump_data "$secondStop" "sync to second stop"
 
-# now run the unwind
+# Unwind to first stop
+echo "[$(date)] Unwinding to batch: $unwindBatch"
 go run ./cmd/integration state_stages_zkevm \
     --datadir="$dataPath/rpc-datadir" \
-    --config=./dynamic-integration8.yaml \
+    --config="zk/tests/unwinds/config/dynamic-integration8.yaml" \
     --chain=dynamic-integration \
-    --unwind-batch-no=${unwindBatch}
+    --unwind-batch-no="$unwindBatch" || { echo "Failed to unwind"; exit 1; }
 
-# now get a dump of the datadir at this point
-go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase1-dump2"
+dump_data "${firstStop}-unwound" "after unwind"
 
+# Files expected to differ after unwind
+different_files=(
+    "Code.txt"
+    "HashedCodeHash.txt"
+    "hermez_l1Sequences.txt"
+    "hermez_l1Verifications.txt"
+    "HermezSmt.txt"
+    "PlainCodeHash.txt"
+    "SyncStage.txt"
+    "BadHeaderNumber.txt"
+    "CallToIndex.txt"
+    "DbInfo.txt"
+)
 
-mkdir -p "$dataPath/phase1-diffs/pre"
-mkdir -p "$dataPath/phase1-diffs/post"
+is_in_array() {
+    local element="$1"
+    for elem in "${different_files[@]}"; do
+        if [[ "$elem" == "$element" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
 
-# iterate over the files in the pre-dump folder
-for file in $(ls $dataPath/phase1-dump1); do
-    # get the filename
-    filename=$(basename $file)
+# Function to compare dumps and print only 'UNEXPECTED' diffs with more context
+compare_dumps() {
+    local original_dir=$1
+    local comparison_dir=$2
+    local label=$3
+    local expected_diffs=("${!4}")
 
-    # diff the files and if there is a difference found copy the pre and post files into the diffs folder
-    if cmp -s $dataPath/phase1-dump1/$filename $dataPath/phase1-dump2/$filename; then
-        echo "No difference found in $filename"
-    else
-        if [ "$filename" = "Code.txt" ] || [ "$filename" = "HashedCodeHash.txt" ] || [ "$filename" = "hermez_l1Sequences.txt" ] || [ "$filename" = "hermez_l1Verifications.txt" ] || [ "$filename" = "HermezSmt.txt" ] || [ "$filename" = "PlainCodeHash.txt" ] || [ "$filename" = "SyncStage.txt" ] || [ "$filename" = "BadHeaderNumber.txt" ]; then
-            echo "Phase 1 Expected differences in $filename"
-        else
-            echo "Phase 1 Unexpected differences in $filename"
+    echo "[$(date)] Comparing dumps between $original_dir and $comparison_dir..."
+
+    for file in "$original_dir"/*; do
+        filename=$(basename "$file")
+        file_comparison="$comparison_dir/$filename"
+
+        if [[ ! -f "$file_comparison" ]]; then
+            echo "[$(date)] File $filename missing in $comparison_dir." >&2
             exit 1
         fi
-    fi
-done
 
-# now sync again
-timeout $secondTimeout ./build/bin/cdk-erigon \
-    --datadir="$dataPath/rpc-datadir" \
-    --config=./dynamic-integration8.yaml \
-    --zkevm.sync-limit=${stopBlock}
-
-# dump the data again into the post folder
-go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase2-dump2"
-
-mkdir -p "$dataPath/phase2-diffs/pre"
-mkdir -p "$dataPath/phase2-diffs/post"
-
-# iterate over the files in the pre-dump folder
-for file in $(ls $dataPath/phase2-dump1); do
-    # get the filename
-    filename=$(basename $file)
-
-    # diff the files and if there is a difference found copy the pre and post files into the diffs folder
-    if cmp -s $dataPath/phase2-dump1/$filename $dataPath/phase2-dump2/$filename; then
-        echo "Phase 2 No difference found in $filename"
-    else
-        if [ "$filename" = "BadHeaderNumber.txt" ]; then
-            echo "Phase 2 Expected differences in $filename"
+        if cmp -s "$file" "$file_comparison"; then
+            # No difference; do nothing
+            :
         else
-            echo "Phase 2 Unexpected differences in $filename"
-            exit 2
+            if is_in_array "$filename"; then
+                # Expected difference; optionally log if needed
+                :
+            else
+                # Unexpected difference; print to stderr with more context
+                echo "[$(date)] $label - Unexpected differences in $filename" >&2
+                echo "[$(date)] Dumping differences for $filename:" >&2
+                diff -u "$file" "$file_comparison" >&2 || true
+                exit 1
+            fi
         fi
-    fi
-done
+    done
+}
+
+# Compare first stop dumps
+compare_dumps "$dataPath/${firstStop}" "$dataPath/${firstStop}-unwound" "Unwind Check" different_files[@]
+
+# Resync to second stop
+echo "[$(date)] Resyncing Erigon to second stop: $secondStop"
+./build/bin/cdk-erigon \
+    --datadir="$dataPath/rpc-datadir" \
+    --config="zk/tests/unwinds/config/dynamic-integration8.yaml" \
+    --debug.limit="$secondStop"
+
+dump_data "${secondStop}-sync-again" "after resyncing to second stop"
+
+# Define expected differences for second comparison
+second_comparison_expected_diffs=(
+    "BadHeaderNumber.txt"
+    "bad_tx_hashes_lookup.txt"
+)
+
+# Compare second stop dumps
+compare_dumps "$dataPath/${secondStop}" "$dataPath/${secondStop}-sync-again" "Sync forward again" second_comparison_expected_diffs[@]
+
+echo "[$(date)] No error"
