@@ -15,8 +15,8 @@ dataPath="./datadir"
 firstStop=11204
 stopBlock=11315
 unwindBatch=70
-firstTimeout=600s
-secondTimeout=600s
+firstTimeout=450s
+secondTimeout=450s
 
 rm -rf "$dataPath/rpc-datadir"
 rm -rf "$dataPath/phase1-dump1"
@@ -85,32 +85,32 @@ for file in $(ls $dataPath/phase1-dump1); do
     fi
 done
 
-## now sync again
-#timeout $secondTimeout ./build/bin/cdk-erigon \
-#    --datadir="./datadir/rpc-datadir" \
-#    --config=./dynamic-integration8.yaml \
-#    --zkevm.sync-limit=${stopBlock}
-#
-## dump the data again into the post folder
-#go run ./cmd/hack --action=dumpAll --chaindata="./datadir/rpc-datadir/chaindata" --output="./datadir/phase2-dump2"
-#
-#mkdir -p "./datadir/phase2-diffs/pre"
-#mkdir -p "./datadir/phase2-diffs/post"
-#
-## iterate over the files in the pre-dump folder
-#for file in $(ls ./datadir/phase2-dump1); do
-#    # get the filename
-#    filename=$(basename $file)
-#
-#    # diff the files and if there is a difference found copy the pre and post files into the diffs folder
-#    if cmp -s ./datadir/phase2-dump1/$filename ./datadir/phase2-dump2/$filename; then
-#        echo "Phase 2 No difference found in $filename"
-#    else
-#        if [ "$filename" = "BadHeaderNumber.txt" ]; then
-#            echo "Phase 2 Expected differences in $filename"
-#        else
-#            echo "Phase 2 Unexpected differences in $filename"
-#            exit 2
-#        fi
-#    fi
-#done
+# now sync again
+timeout $secondTimeout ./build/bin/cdk-erigon \
+    --datadir="./datadir/rpc-datadir" \
+    --config=./dynamic-integration8.yaml \
+    --zkevm.sync-limit=${stopBlock}
+
+# dump the data again into the post folder
+go run ./cmd/hack --action=dumpAll --chaindata="./datadir/rpc-datadir/chaindata" --output="./datadir/phase2-dump2"
+
+mkdir -p "./datadir/phase2-diffs/pre"
+mkdir -p "./datadir/phase2-diffs/post"
+
+# iterate over the files in the pre-dump folder
+for file in $(ls ./datadir/phase2-dump1); do
+    # get the filename
+    filename=$(basename $file)
+
+    # diff the files and if there is a difference found copy the pre and post files into the diffs folder
+    if cmp -s ./datadir/phase2-dump1/$filename ./datadir/phase2-dump2/$filename; then
+        echo "Phase 2 No difference found in $filename"
+    else
+        if [ "$filename" = "BadHeaderNumber.txt" ]; then
+            echo "Phase 2 Expected differences in $filename"
+        else
+            echo "Phase 2 Unexpected differences in $filename"
+            #exit 2
+        fi
+    fi
+done
