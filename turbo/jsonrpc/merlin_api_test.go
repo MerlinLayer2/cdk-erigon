@@ -115,7 +115,7 @@ func BatchByNumber(ctx context.Context, url string, number *big.Int) (*types.Bat
 
 func TestVerifyTestnet(t *testing.T) {
 	cfg := etherman.Config{
-		URL:       "http://103.231.86.44:7545",
+		URL:       "https://testnet-l1.merlinchain.io",
 		L1ChainID: 55555,
 		L2ChainID: 686868,
 	}
@@ -135,11 +135,24 @@ func TestVerifyTestnet(t *testing.T) {
 	blockHash := libcommon.HexToHash("0xd538e2d6e98ffe176f60ea3401ffb54d0c0c3fbbf05bcef442cb7f6018fbe4e0")
 	txindex := uint(0)
 
-	ret := newRemoteTest(mpoints, "https://testnet-rpc.merlinchain.io", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID8Elderberry))
+	ret := newRemoteTest(mpoints, "http://43.134.127.80:8123", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID8Elderberry))
 	mpoints.setRemote(ret)
 
-	zkp, _, err := mpoints.getZkProofMeta(context.Background(), blockHash, uint64(chain.ForkID8Elderberry))
+	zkp, snark, err := mpoints.getZkProofMeta(context.Background(), blockHash, uint64(chain.ForkID8Elderberry))
 	require.NoError(t, err)
+
+	zkpp := &ZKProof{
+		ForkID:     zkp.forkID,
+		Proof:      zkp.proof,
+		PubSignals: zkp.pubSignals,
+		RpubSignals: &RawPubSignals{
+			Snark:  snark,
+			Rfield: RFIELD,
+		},
+	}
+
+	data, _ := json.MarshalIndent(zkpp, "", "    ")
+	fmt.Println(string(data))
 
 	isv, err := mpoints.VerifyZkProof(zkp.forkID, zkp.proof, zkp.pubSignals)
 	require.NoError(t, err)
@@ -148,7 +161,7 @@ func TestVerifyTestnet(t *testing.T) {
 
 func TestVerifyMainnet(t *testing.T) {
 	cfg := etherman.Config{
-		URL:       "http://18.142.49.94:8545",
+		URL:       "https://mainnet-l1.merlinchain.io",
 		L1ChainID: 202401,
 		L2ChainID: 4200,
 	}
@@ -167,7 +180,7 @@ func TestVerifyMainnet(t *testing.T) {
 	blockHash := libcommon.HexToHash("0xfb10076988cc8fee0ef51a2afd93c3433333d7977e2058e370a0b29eb52363dc") // 0x30f569
 	txindex := uint(0)
 
-	ret := newRemoteTest(mpoints, "https://rpc.merlinchain.io", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID8Elderberry))
+	ret := newRemoteTest(mpoints, "http://43.134.127.80:9123", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID8Elderberry))
 	mpoints.setRemote(ret)
 
 	zkp, snark, err := mpoints.getZkProofMeta(context.Background(), blockHash, uint64(chain.ForkID8Elderberry))
@@ -189,7 +202,7 @@ func TestVerifyMainnet(t *testing.T) {
 
 func TestVerifyMainnetForkID5(t *testing.T) {
 	cfg := etherman.Config{
-		URL:       "http://18.142.49.94:8545",
+		URL:       "https://mainnet-l1.merlinchain.io",
 		L2ChainID: 4200,
 	}
 
@@ -205,11 +218,9 @@ func TestVerifyMainnetForkID5(t *testing.T) {
 
 	mpoints := NewMerlinAPI(nil, nil, conf, nil, newTestL1Syncer(ethermanClient))
 
-	//blockHash := common.HexToHash("0x756bd43b6d85f5fae4008cd92f7fa9198a6e6ec6b0979e7db1f323de60d522b3") //00
-	blockHash := libcommon.HexToHash("0xaa21a9814bd65c8a129e5f328e11a43ac3b7e55e38fda9d4a41f6549f6d689bc") //01
-	//blockHash := common.HexToHash("0xdc6ba51440d94d69c8a4184b1a353e8bc302e6bcb0f2a4e30883b7ecd7393cc1")
+	blockHash := libcommon.HexToHash("0x7ddf342c18664476959ef43287fb3e206922f712e3aa31e1c395cac67c377351") //03
 	txindex := uint(0)
-	ret := newRemoteTest(mpoints, "https://rpc.merlinchain.io", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID5Dragonfruit))
+	ret := newRemoteTest(mpoints, "http://43.134.127.80:9123", ethermanClient, blockHash, txindex, cfg.L2ChainID, uint64(chain.ForkID5Dragonfruit))
 	mpoints.setRemote(ret)
 
 	zkm, snark, err := mpoints.getZkProofMeta(context.Background(), blockHash, uint64(chain.ForkID5Dragonfruit))
