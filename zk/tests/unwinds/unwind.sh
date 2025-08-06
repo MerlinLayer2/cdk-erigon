@@ -41,7 +41,7 @@ timeout $firstTimeout ./build/bin/cdk-erigon \
 # now get a dump of the datadir at this point
 go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase1-dump1"
 
-rm -rf "$dataPath/rpc-datadir"
+#rm -rf "$dataPath/rpc-datadir"
 
 # now run to the final stop block
 timeout $secondTimeout ./build/bin/cdk-erigon \
@@ -87,23 +87,23 @@ done
 
 # now sync again
 timeout $secondTimeout ./build/bin/cdk-erigon \
-    --datadir="./datadir/rpc-datadir" \
+    --datadir="$dataPath/rpc-datadir" \
     --config=./dynamic-integration8.yaml \
     --zkevm.sync-limit=${stopBlock}
 
 # dump the data again into the post folder
-go run ./cmd/hack --action=dumpAll --chaindata="./datadir/rpc-datadir/chaindata" --output="./datadir/phase2-dump2"
+go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase2-dump2"
 
-mkdir -p "./datadir/phase2-diffs/pre"
-mkdir -p "./datadir/phase2-diffs/post"
+mkdir -p "$dataPath/phase2-diffs/pre"
+mkdir -p "$dataPath/phase2-diffs/post"
 
 # iterate over the files in the pre-dump folder
-for file in $(ls ./datadir/phase2-dump1); do
+for file in $(ls $dataPath/phase2-dump1); do
     # get the filename
     filename=$(basename $file)
 
     # diff the files and if there is a difference found copy the pre and post files into the diffs folder
-    if cmp -s ./datadir/phase2-dump1/$filename ./datadir/phase2-dump2/$filename; then
+    if cmp -s $dataPath/phase2-dump1/$filename $dataPath/phase2-dump2/$filename; then
         echo "Phase 2 No difference found in $filename"
     else
         if [ "$filename" = "BadHeaderNumber.txt" ] || [ "$filename" = "HermezSmt.txt" ]; then
