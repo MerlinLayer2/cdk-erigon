@@ -41,7 +41,6 @@ timeout $firstTimeout ./build/bin/cdk-erigon \
 # now get a dump of the datadir at this point
 go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase1-dump1"
 
-#rm -rf "$dataPath/rpc-datadir"
 
 # now run to the final stop block
 timeout $secondTimeout ./build/bin/cdk-erigon \
@@ -75,8 +74,7 @@ for file in $(ls $dataPath/phase1-dump1); do
     if cmp -s $dataPath/phase1-dump1/$filename $dataPath/phase1-dump2/$filename; then
         echo "No difference found in $filename"
     else
-        #if [ "$filename" = "Code.txt" ] || [ "$filename" = "HashedCodeHash.txt" ] || [ "$filename" = "hermez_l1Sequences.txt" ] || [ "$filename" = "hermez_l1Verifications.txt" ] || [ "$filename" = "HermezSmt.txt" ] || [ "$filename" = "PlainCodeHash.txt" ] || [ "$filename" = "SyncStage.txt" ] || [ "$filename" = "BadHeaderNumber.txt" ]; then
-        if [ "$filename" = "Code.txt" ] || [ "$filename" = "HashedCodeHash.txt" ] || [ "$filename" = "hermez_l1Sequences.txt" ] || [ "$filename" = "hermez_l1Verifications.txt" ] || [ "$filename" = "HermezSmt.txt" ] || [ "$filename" = "PlainCodeHash.txt" ] || [ "$filename" = "SyncStage.txt" ] || [ "$filename" = "BadHeaderNumber.txt" ] || [ "$filename" = "erigon_versions.txt" ] || [ "$filename" = "plain_state_version.txt" ] || [ "$filename" = "smt_depths.txt" ]; then
+        if [ "$filename" = "Code.txt" ] || [ "$filename" = "HashedCodeHash.txt" ] || [ "$filename" = "hermez_l1Sequences.txt" ] || [ "$filename" = "hermez_l1Verifications.txt" ] || [ "$filename" = "HermezSmt.txt" ] || [ "$filename" = "PlainCodeHash.txt" ] || [ "$filename" = "SyncStage.txt" ] || [ "$filename" = "BadHeaderNumber.txt" ]; then
             echo "Phase 1 Expected differences in $filename"
         else
             echo "Phase 1 Unexpected differences in $filename"
@@ -106,7 +104,7 @@ for file in $(ls $dataPath/phase2-dump1); do
     if cmp -s $dataPath/phase2-dump1/$filename $dataPath/phase2-dump2/$filename; then
         echo "Phase 2 No difference found in $filename"
     else
-        if [ "$filename" = "BadHeaderNumber.txt" ] || [ "$filename" = "HermezSmt.txt" ]; then
+        if [ "$filename" = "BadHeaderNumber.txt" ]; then
             echo "Phase 2 Expected differences in $filename"
         else
             echo "Phase 2 Unexpected differences in $filename"
