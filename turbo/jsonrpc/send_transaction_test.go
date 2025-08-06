@@ -99,8 +99,11 @@ func TestSendRawTransaction(t *testing.T) {
 	txsCh, id := ff.SubscribePendingTxs(1)
 	defer ff.UnsubscribePendingTxs(id)
 
-	txHash, err := api.SendRawTransaction(ctx, buf.Bytes())
-	require.NoError(err)
+	var txHash common.Hash
+	time.AfterFunc(10*time.Millisecond, func() {
+		txHash, err = api.SendRawTransaction(ctx, buf.Bytes())
+		require.NoError(err)
+	})
 
 	select {
 	case got := <-txsCh:
@@ -157,8 +160,11 @@ func TestSendRawTransactionUnprotected(t *testing.T) {
 	txsCh, id := ff.SubscribePendingTxs(1)
 	defer ff.UnsubscribePendingTxs(id)
 
-	txHash, err := api.SendRawTransaction(ctx, buf.Bytes())
-	require.NoError(err)
+	var txHash common.Hash
+	time.AfterFunc(10*time.Millisecond, func() {
+		txHash, err = api.SendRawTransaction(ctx, buf.Bytes())
+		require.NoError(err)
+	})
 
 	select {
 	case got := <-txsCh:
