@@ -15,8 +15,8 @@ dataPath="./datadir"
 firstStop=11204
 stopBlock=11315
 unwindBatch=70
-firstTimeout=300s
-secondTimeout=300s
+firstTimeout=450s
+secondTimeout=450s
 
 rm -rf "$dataPath/rpc-datadir"
 rm -rf "$dataPath/phase1-dump1"
@@ -24,13 +24,13 @@ rm -rf "$dataPath/phase1-dump2"
 rm -rf "$dataPath/phase2-dump1"
 rm -rf "$dataPath/phase2-dump2"
 rm -rf "$dataPath/phase1-diffs"
-rm -rf "$dataPath/phase2-diffs"  
+rm -rf "$dataPath/phase2-diffs"
 
 # run datastream server
-go run ./zk/debug_tools/datastream-host --file="$(pwd)/zk/tests/unwinds/datastream/hermez-dynamic-integration8-datastream/data-stream.bin" &
+nohup go run ./zk/debug_tools/datastream-host --file="$(pwd)/zk/tests/unwinds/datastream/hermez-dynamic-integration8-datastream/data-stream.bin" > datastream.log 2>&1 &
 
 # in order to start the datastream server
-sleep 10
+sleep 20
 
 # run erigon for a while to sync to the unwind point to capture the dump
 timeout $firstTimeout ./build/bin/cdk-erigon \
@@ -40,6 +40,7 @@ timeout $firstTimeout ./build/bin/cdk-erigon \
 
 # now get a dump of the datadir at this point
 go run ./cmd/hack --action=dumpAll --chaindata="$dataPath/rpc-datadir/chaindata" --output="$dataPath/phase1-dump1"
+
 
 # now run to the final stop block
 timeout $secondTimeout ./build/bin/cdk-erigon \
