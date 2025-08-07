@@ -105,6 +105,8 @@ func DecodeSequenceBatchesCalldata(data []byte) (calldata interface{}, err error
 		} else {
 			return decodeEtrogSequenceBatchesValidiumCallData(unpackedCalldata), nil
 		}
+	case contracts.SequenceBatchesValidiumIdv5_0:
+		return decodePreEtrogSequenceBatchesValidiumCallData(unpackedCalldata), nil
 	case contracts.SequenceBatchesIdv6_6:
 		if method.Name == sequenceBatchesMethodName {
 			return decodeElderberryBatchesCallData(unpackedCalldata), nil
