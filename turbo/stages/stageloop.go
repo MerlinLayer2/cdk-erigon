@@ -100,11 +100,11 @@ func StageLoop(ctx context.Context,
 }
 
 func StageLoopIteration(ctx context.Context, db kv.RwDB, txc wrap.TxContainer, sync *stagedsync.Sync, initialCycle bool, logger log.Logger, blockReader services.FullBlockReader, hook *Hook, forcePartialCommit bool) (err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			err = fmt.Errorf("%+v, trace: %s", rec, dbg.Stack())
-		}
-	}() // avoid crash because Erigon's core does many things
+	//defer func() {
+	//	if rec := recover(); rec != nil {
+	//		err = fmt.Errorf("%+v, trace: %s", rec, dbg.Stack())
+	//	}
+	//}() // avoid crash because Erigon's core does many things
 
 	externalTx := txc.Tx != nil
 	finishProgressBefore, borProgressBefore, headersProgressBefore, err := stagesHeadersAndFinish(db, txc.Tx)

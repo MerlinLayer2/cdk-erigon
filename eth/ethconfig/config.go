@@ -256,6 +256,8 @@ type Config struct {
 
 	OverridePragueTime *big.Int `toml:",omitempty"`
 
+	OverrideLondon *big.Int `toml:",omitempty"`
+
 	//[zkevm]
 	*Zk
 
