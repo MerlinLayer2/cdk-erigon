@@ -79,6 +79,16 @@ func ApplyFlagsForZkConfig(ctx *cli.Context, cfg *ethconfig.Config) {
 		panic(fmt.Sprintf("could not parse sequencer block seal time timeout value %s", sequencerBlockSealTimeVal))
 	}
 
+	sequencerBlockShiftTimeVal := ctx.String(utils.SequencerBlockShiftTime.Name)
+	sequencerBlockShiftTime, err := time.ParseDuration(sequencerBlockShiftTimeVal)
+	if err != nil {
+		panic(fmt.Sprintf("could not parse sequencer block seal time timeout value %s", sequencerBlockSealTimeVal))
+	}
+
+	if sequencerBlockShiftTime >= sequencerBlockSealTime {
+		panic(fmt.Sprintf("sequencer block seal time %s should bigger than sequencer block shift time %s", sequencerBlockSealTimeVal, sequencerBlockShiftTimeVal))
+	}
+
 	sequencerBatchSealTimeVal := ctx.String(utils.SequencerBatchSealTime.Name)
 	sequencerBatchSealTime, err := time.ParseDuration(sequencerBatchSealTimeVal)
 	if err != nil {
@@ -203,6 +213,7 @@ func ApplyFlagsForZkConfig(ctx *cli.Context, cfg *ethconfig.Config) {
 		IncrementTreeAlways:                    ctx.Bool(utils.IncrementTreeAlways.Name),
 		SmtRegenerateInMemory:                  ctx.Bool(utils.SmtRegenerateInMemory.Name),
 		SequencerBlockSealTime:                 sequencerBlockSealTime,
+		SequencerBlockShiftTime:                sequencerBlockShiftTime,
 		SequencerBatchSealTime:                 sequencerBatchSealTime,
 		SequencerBatchVerificationTimeout:      sequencerBatchVerificationTimeout,
 		SequencerBatchVerificationRetries:      ctx.Int(utils.SequencerBatchVerificationRetries.Name),

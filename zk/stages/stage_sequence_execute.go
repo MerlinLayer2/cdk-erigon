@@ -241,7 +241,7 @@ func sequencingBatchStep(
 		}
 		log.Info(fmt.Sprintf("[%s] Starting block %d (forkid %v)...", logPrefix, blockNumber, batchState.forkId))
 		logTicker.Reset(10 * time.Second)
-		blockTicker.Reset(cfg.zk.SequencerBlockSealTime)
+		blockTicker.Reset(cfg.zk.SequencerBlockSealTime - cfg.zk.SequencerBlockShiftTime)
 		blockStartTime := time.Now()
 
 		if batchState.isL1Recovery() {
@@ -657,6 +657,7 @@ func sequencingBatchStep(
 			return err
 		}
 		checkMinBlockIntervalTime(blockStartTime)
+		checkBlockShiftTime(batchContext.cfg, blockStartTime)
 	}
 
 	/*

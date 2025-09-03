@@ -341,7 +341,7 @@ func prepareL1AndInfoTreeRelatedStuff(sdb *stageDb, batchState *BatchState, prop
 func prepareTickers(cfg *SequenceBlockCfg) (*time.Ticker, *time.Ticker, *time.Ticker, *time.Ticker) {
 	batchTicker := time.NewTicker(cfg.zk.SequencerBatchSealTime)
 	logTicker := time.NewTicker(10 * time.Second)
-	blockTicker := time.NewTicker(cfg.zk.SequencerBlockSealTime)
+	blockTicker := time.NewTicker(cfg.zk.SequencerBlockSealTime - cfg.zk.SequencerBlockShiftTime)
 	infoTreeTicker := time.NewTicker(cfg.zk.InfoTreeUpdateInterval)
 
 	return batchTicker, logTicker, blockTicker, infoTreeTicker
@@ -351,6 +351,16 @@ func checkMinBlockIntervalTime(start time.Time) {
 	tt := time.Now().Sub(start)
 	if tt < MinBlockIntervalTime {
 		time.Sleep(MinBlockIntervalTime - tt)
+	}
+}
+
+func checkBlockShiftTime(cfg *SequenceBlockCfg, start time.Time) {
+	if cfg.zk.SequencerBlockShiftTime == 0 {
+		return
+	}
+	tt := time.Now().Sub(start)
+	if tt < cfg.zk.SequencerBlockSealTime {
+		time.Sleep(cfg.zk.SequencerBlockSealTime - tt)
 	}
 }
 
