@@ -554,7 +554,7 @@ var (
 
 	SequencerBlockShiftTime = cli.StringFlag{
 		Name:  "zkevm.sequencer-block-shift-time",
-		Usage: "Block shift time. Defaults to 0s",
+		Usage: "Block shift time. Defaults to 0s, mean disable this flag",
 		Value: "0s",
 	}
 	SequencerBatchSealTime = cli.StringFlag{
