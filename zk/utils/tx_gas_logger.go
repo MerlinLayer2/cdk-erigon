@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/ledgerwatch/erigon-lib/common"
@@ -13,6 +15,8 @@ import (
 )
 
 type TxGasLogger struct {
+	ctx             context.Context
+	cancel          context.CancelFunc
 	logEvery        *time.Ticker
 	initialBlock    uint64
 	logBlock        uint64
@@ -28,10 +32,14 @@ type TxGasLogger struct {
 	batch           *kv.PendingMutations
 	tx              kv.RwTx
 	metric          metrics.Gauge
+	wg              sync.WaitGroup
 }
 
-func NewTxGasLogger(logInterval time.Duration, logBlock, total, gasLimit uint64, logPrefix string, batch *kv.PendingMutations, tx kv.RwTx, metric metrics.Gauge) *TxGasLogger {
+func NewTxGasLogger(ctx context.Context, logInterval time.Duration, logBlock, total, gasLimit uint64, logPrefix string, batch *kv.PendingMutations, tx kv.RwTx, metric metrics.Gauge) *TxGasLogger {
+	ctx, cancel := context.WithCancel(ctx)
 	return &TxGasLogger{
+		ctx:          ctx,
+		cancel:       cancel,
 		logEvery:     time.NewTicker(logInterval),
 		initialBlock: logBlock,
 		logBlock:     logBlock,
@@ -48,24 +56,41 @@ func NewTxGasLogger(logInterval time.Duration, logBlock, total, gasLimit uint64,
 }
 
 func (g *TxGasLogger) Start() {
+	g.wg.Add(1)
 	go func() {
-		for range g.logEvery.C {
-			g.logProgress()
-			g.logTx = g.lastLogTx
-			g.logBlock = g.currentBlockNum
-			g.logTime = time.Now()
-			g.gas = 0
-			if g.tx != nil {
-				g.tx.CollectMetrics()
+		defer g.wg.Done()
+		for {
+			select {
+			case <-g.ctx.Done():
+				log.Info(fmt.Sprintf("[%s] Stopping TxGasLogger", g.logPrefix))
+				return
+			case <-g.logEvery.C:
+				func() {
+					// if tx gets committed during metrics collection, ensure we recover and start logging again
+					defer func() {
+						if r := recover(); r != nil {
+							log.Warn(fmt.Sprintf("[%s] Encountered a panic during TxGasLogger, recovering...", g.logPrefix), "error", r)
+						}
+					}()
+					g.logProgress()
+					g.logTx = g.lastLogTx
+					g.logBlock = g.currentBlockNum
+					g.logTime = time.Now()
+					g.gas = 0
+					if g.tx != nil {
+						g.tx.CollectMetrics()
+					}
+					g.metric.SetUint64(g.logBlock)
+				}()
 			}
-			g.metric.SetUint64(g.logBlock)
 		}
 	}()
-
 }
 
 func (g *TxGasLogger) Stop() {
+	g.cancel()
 	g.logEvery.Stop()
+	g.wg.Wait()
 }
 
 func (g *TxGasLogger) SetTx(tx kv.RwTx) {
