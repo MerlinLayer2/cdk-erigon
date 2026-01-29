@@ -341,10 +341,10 @@ func postExecuteCommitValues(
 	blockNum := block.NumberU64()
 
 	// lyh for test
-	if cfg.chainConfig.IsForkId9Elderberry2(blockNum) {
-		log.Warn(fmt.Sprintf("[%s] lyh test", logPrefix), "blockNumber", blockNum, "datastreamBlockHash",
-			datastreamBlockHash, "calculatedBlockHash", blockHash, "ForkID9Elderberry2Block", cfg.chainConfig.ForkID9Elderberry2Block)
-	}
+
+	log.Warn(fmt.Sprintf("[%s] lyh test", logPrefix), "blockNumber", blockNum, "datastreamBlockHash",
+		datastreamBlockHash, "calculatedBlockHash", blockHash,
+		"ForkID9Elderberry2Block", cfg.chainConfig.ForkID9Elderberry2Block, "is", cfg.chainConfig.IsForkId9Elderberry2(blockNum))
 
 	// if datastream hash was wrong, remove old data
 	if blockHash != datastreamBlockHash {
